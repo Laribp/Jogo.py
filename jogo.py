@@ -51,6 +51,12 @@ enemy_icon = pygame.image.load("img/enemy_icon.png")
 chute_hero = pygame.image.load("img/chute_hero.png")
 chute_hero = pygame.transform.scale(chute_hero, (250, 200))
 
+menu_pausa = pygame.image.load("img/menu_pausa.png")
+menu_pausa = pygame.transform.scale(menu_pausa, (600, 650))
+
+botao_pausa = pygame.image.load("img/botao_pausa.png")
+botao_pausa = pygame.transform.scale(botao_pausa, (60, 60))
+
 vitoria = pygame.image.load("img/vitoria.png")
 vitoria = pygame.transform.scale(vitoria, (largura_tela, altura_tela))
 
@@ -63,14 +69,20 @@ game_over = pygame.transform.scale(game_over, (largura_tela, altura_tela))
 # -----------------------
 botao_jogar = pygame.Rect(550, 400, 250, 60)
 botao_sair = pygame.Rect(550, 480, 250, 60)
-botao_restart = pygame.Rect(500, 500, 350, 60)
+botao_restart = pygame.Rect(450, 500, 500, 60)
+
+pausa_rect = pygame.Rect(600, 60, 60, 60)
+
+botao_voltar = pygame.Rect(470, 250, 400, 100)
+botao_reiniciar = pygame.Rect(470, 400, 400, 100)
+botao_sair_pausa = pygame.Rect(470, 550, 400, 100)
 
 # -----------------------
 # FUNÇÃO BOTÃO
 # -----------------------
 def desenhar_botao(rect, texto):
-    pygame.draw.rect(tela, BOTAO_FUNDO, rect)
-    pygame.draw.rect(tela, BORDA_BOTAO, rect, 3)
+    pygame.draw.rect(tela, BOTAO_FUNDO, rect, border_radius=20)
+    pygame.draw.rect(tela, BORDA_BOTAO, rect, 3, border_radius=20)
 
     txt = fonte.render(texto, True, TEXTO_BRANCO)
 
@@ -83,10 +95,10 @@ def desenhar_botao(rect, texto):
 # FUNÇÃO BARRA DE VIDA
 # -----------------------
 def desenhar_barra_vida(nome, vida, vida_max, x, y, cor):
-    pygame.draw.rect(tela, CINZA, (x, y, 400, 25))
+    pygame.draw.rect(tela, CINZA, (x, y, 350, 25), border_radius=15)
 
-    largura = int((vida / vida_max) * 400)
-    pygame.draw.rect(tela, cor, (x, y, largura, 25))
+    largura = int((vida / vida_max) * 350)
+    pygame.draw.rect(tela, cor, (x, y, largura, 25), border_radius=15)
 
     texto_nome = fonte_hud.render(nome, True, BRANCO)
     tela.blit(texto_nome, (x, y - 35))
@@ -130,12 +142,17 @@ duracao_ataque = 200
 dano_aplicado = False
 
 # -----------------------
+# PAUSA
+# -----------------------
+pausado = False
+# -----------------------
 # RESET DO JOGO
 # -----------------------
 def reset_jogo():
     global hero_x, hero_y, enemy_x, enemy_y
     global hero_vida, enemy_vida
     global atacando, dano_aplicado
+    global pausado
 
     hero_x, hero_y = 200, 470
     enemy_x, enemy_y = 900, 450
@@ -145,6 +162,7 @@ def reset_jogo():
 
     atacando = False
     dano_aplicado = False
+    pausado = False
 
 # -----------------------
 # LOOP PRINCIPAL
@@ -172,11 +190,26 @@ while running:
 
         # JOGO
         if estado == JOGO:
-            if evento.type == pygame.KEYDOWN:
-                if evento.key == pygame.K_SPACE:
-                    atacando = True
-                    tempo_ataque = pygame.time.get_ticks()
-                    dano_aplicado = False
+            if evento.type == pygame.MOUSEBUTTONDOWN:
+                if pausa_rect.collidepoint(evento.pos):
+                    pausado = not pausado  # Alternar pausa
+                elif pausado:
+                    if botao_voltar.collidepoint(evento.pos):
+                        pausado = False
+                    elif botao_reiniciar.collidepoint(evento.pos):
+                        reset_jogo()
+                        pausado = False
+                    elif botao_sair_pausa.collidepoint(evento.pos):
+                        running = False
+
+            if not pausado:
+                if evento.type == pygame.KEYDOWN:
+                    if evento.key == pygame.K_SPACE:
+                        atacando = True
+                        tempo_ataque = pygame.time.get_ticks()
+                        dano_aplicado = False
+
+            
 
         # GAME OVER / VITORIA
         if estado == GAME_OVER or estado == VITORIA:
@@ -184,6 +217,7 @@ while running:
                 if botao_restart.collidepoint(evento.pos):
                     reset_jogo()
                     estado = MENU
+
 
     # ==================================================
     # MENU
@@ -197,7 +231,8 @@ while running:
     # JOGO
     # ==================================================
     elif estado == JOGO:
-        teclas = pygame.key.get_pressed()
+        if not pausado:
+            teclas = pygame.key.get_pressed()
 
         # movimento
         if teclas[pygame.K_a] or teclas[pygame.K_LEFT]:
@@ -249,8 +284,24 @@ while running:
 
 
         # HUD
-        desenhar_barra_vida("Guardiã Sombria", hero_vida, hero_vida_max, 100, 60, VERDE)
-        desenhar_barra_vida("Rei Dragão", enemy_vida, enemy_vida_max, 800, 60, VERMELHO)
+        desenhar_barra_vida("Guardiã Sombria", hero_vida, hero_vida_max, 100, 100, VERDE)
+        desenhar_barra_vida("Rei Dragão", enemy_vida, enemy_vida_max, 800, 100, VERMELHO)
+
+        # botão pausa
+        tela.blit(botao_pausa, (pausa_rect.x, pausa_rect.y))
+
+        if pausado:
+            overlay = pygame.Surface((largura_tela, altura_tela))
+            overlay.set_alpha(140)
+            overlay.fill((0, 0, 0))
+            tela.blit(overlay, (0, 0))
+
+            tela.blit(menu_pausa, (370, 80))
+            desenhar_botao(botao_voltar, "VOLTAR AO JOGO")
+            desenhar_botao(botao_reiniciar, "REINICIAR")
+            desenhar_botao(botao_sair_pausa, "SAIR")
+
+
 
     # ==================================================
     # GAME OVER
