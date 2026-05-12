@@ -61,8 +61,8 @@ game_over = pygame.transform.scale(game_over, (largura_tela, altura_tela))
 # -----------------------
 # BOTÕES
 # -----------------------
-botao_jogar = pygame.Rect(550, 300, 250, 60)
-botao_sair = pygame.Rect(550, 400, 250, 60)
+botao_jogar = pygame.Rect(550, 400, 250, 60)
+botao_sair = pygame.Rect(550, 480, 250, 60)
 botao_restart = pygame.Rect(500, 500, 350, 60)
 
 # -----------------------
