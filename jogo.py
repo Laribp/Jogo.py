@@ -1,9 +1,6 @@
 import pygame
 import sys
 
-
-# Inicialização do Pygame
-
 pygame.init()
 
 largura_tela = 1344
@@ -12,11 +9,9 @@ fps = 60
 
 tela = pygame.display.set_mode((largura_tela, altura_tela))
 pygame.display.set_caption("Reino em Ruinas")
-
 clock = pygame.time.Clock()
 
 # CORES
-
 BRANCO = (255, 255, 255)
 CINZA = (50, 50, 50)
 VERMELHO = (255, 49, 49)
@@ -24,175 +19,299 @@ VERDE = (71, 128, 114)
 BOTAO_FUNDO = (54, 57, 51)
 BORDA_BOTAO = (255, 49, 49)
 TEXTO_BRANCO = (255, 255, 255)
+AMARELO = (255, 220, 50)
+LARANJA = (255, 140, 0)
 
-#FONTES
+# FONTES
 fonte = pygame.font.SysFont("Arial", 40, bold=True)
 fonte_hud = pygame.font.SysFont("Arial", 30, bold=True)
+fonte_titulo = pygame.font.SysFont("Arial", 58, bold=True)
+fonte_desc = pygame.font.SysFont("Arial", 22)
 
-
-#carregar imagens do jogo
-
+# IMAGENS BASE
 background = pygame.image.load("img/background.jpg")
 background = pygame.transform.scale(background, (largura_tela, altura_tela))
 
-menu = pygame.image.load("img/menu.png")
-menu = pygame.transform.scale(menu, (largura_tela, altura_tela))
+menu_img = pygame.image.load("img/menu.png")
+menu_img = pygame.transform.scale(menu_img, (largura_tela, altura_tela))
 
-hero_img = pygame.image.load("img/hero.png")
-hero_img = pygame.transform.scale(hero_img, (170, 170))
+hero= pygame.image.load("img/hero.png")
+hero = pygame.transform.scale(hero, (170, 170))
 
-enemy_img = pygame.image.load("img/enemy.png")
-enemy_img = pygame.transform.scale(enemy_img, (200, 200))
-
-hero_icon = pygame.image.load("img/hero_icon.png")
-
-enemy_icon = pygame.image.load("img/enemy_icon.png")
+_enemy_raw = pygame.image.load("img/enemy.png")
+_enemy_raw = pygame.transform.scale(_enemy_raw, (200, 200))
 
 chute_hero = pygame.image.load("img/chute_hero.png")
 chute_hero = pygame.transform.scale(chute_hero, (250, 200))
 
-menu_pausa = pygame.image.load("img/menu_pausa.png")
-menu_pausa = pygame.transform.scale(menu_pausa, (600, 650))
+arqueiro = pygame.image.load("img/arqueiro.png").convert_alpha()
+arqueiro = pygame.transform.scale(arqueiro, (300, 300))
 
-botao_pausa = pygame.image.load("img/botao_pausa.png")
-botao_pausa = pygame.transform.scale(botao_pausa, (60, 60))
+ataque_arqueiro = pygame.image.load("img/ataque_arqueiro.png")
+ataque_arqueiro = pygame.transform.scale(ataque_arqueiro, (250, 200))
 
-vitoria = pygame.image.load("img/vitoria.png")
-vitoria = pygame.transform.scale(vitoria, (largura_tela, altura_tela))
+arqueiro_icon = pygame.image.load("img/arqueiro_icon.png")
+arqueiro_icon = pygame.transform.scale(arqueiro_icon, (130, 130))
 
-game_over = pygame.image.load("img/game_over.png")
-game_over = pygame.transform.scale(game_over, (largura_tela, altura_tela))
+hero_icon = pygame.image.load("img/hero_icon.png")
+hero_icon = pygame.transform.scale(hero_icon, (60, 60))
 
+enemy_icon = pygame.image.load("img/enemy_icon.png")
+enemy_icon = pygame.transform.scale(enemy_icon, (60, 60))
 
-# -----------------------
-# BOTÕES
-# -----------------------
+menu_pausa_img = pygame.image.load("img/menu_pausa.png")
+menu_pausa_img = pygame.transform.scale(menu_pausa_img, (600, 650))
+
+botao_pausa_img = pygame.image.load("img/botao_pausa.png")
+botao_pausa_img = pygame.transform.scale(botao_pausa_img, (60, 60))
+
+vitoria_img = pygame.image.load("img/vitoria.png")
+vitoria_img = pygame.transform.scale(vitoria_img, (largura_tela, altura_tela))
+
+game_over_img = pygame.image.load("img/game_over.png")
+game_over_img = pygame.transform.scale(game_over_img, (largura_tela, altura_tela))
+
+# SPRITES DIRECIONAIS HERÓI (1=direita, -1=esquerda)
+# hero_img original assume que o boneco olha para a DIREITA
+sprites_heroi = {
+    "guerreiro": {
+         1: hero,
+        -1: pygame.transform.flip(hero, True, False),
+    },
+    "arqueiro": {
+         1:arqueiro,
+         -1: pygame.transform.flip(arqueiro, True, False),   # arqueiro visual diferenciado ,
+    },
+}
+sprites_ataque_heroi = {
+    "guerreiro": {
+         1: chute_hero,
+        -1: pygame.transform.flip(chute_hero, True, False),
+    },
+    "arqueiro": {
+         1: pygame.transform.flip(ataque_arqueiro, True, False),
+         -1: ataque_arqueiro,
+    },
+}
+
+# SPRITES DIRECIONAIS INIMIGO
+# enemy_img original assume que o boneco olha para a ESQUERDA (em direção ao herói)
+sprites_enemy = {
+    -1: _enemy_raw,                                           # olhando para esquerda
+     1: pygame.transform.flip(_enemy_raw, True, False),      # olhando para direita
+}
+
+# BOTÕES MENU
 botao_jogar = pygame.Rect(550, 400, 250, 60)
 botao_sair = pygame.Rect(550, 480, 250, 60)
 botao_restart = pygame.Rect(450, 500, 500, 60)
 
 pausa_rect = pygame.Rect(600, 60, 60, 60)
-
 botao_voltar = pygame.Rect(470, 250, 400, 100)
 botao_reiniciar = pygame.Rect(470, 400, 400, 100)
 botao_sair_pausa = pygame.Rect(470, 550, 400, 100)
 
-# -----------------------
-# FUNÇÃO BOTÃO
-# -----------------------
-def desenhar_botao(rect, texto):
-    pygame.draw.rect(tela, BOTAO_FUNDO, rect, border_radius=20)
-    pygame.draw.rect(tela, BORDA_BOTAO, rect, 3, border_radius=20)
+# BOTÕES SELEÇÃO DE CLASSE
+botao_guerreiro = pygame.Rect(220, 170, 400, 480)
+botao_arqueiro = pygame.Rect(720, 170, 400, 480)
 
-    txt = fonte.render(texto, True, TEXTO_BRANCO)
-
-    tela.blit(txt, (
-        rect.x + (rect.width - txt.get_width()) // 2,
-        rect.y + (rect.height - txt.get_height()) // 2
-    ))
-
-# -----------------------
-# FUNÇÃO BARRA DE VIDA
-# -----------------------
-def desenhar_barra_vida(nome, vida, vida_max, x, y, cor):
-    pygame.draw.rect(tela, CINZA, (x, y, 350, 25), border_radius=15)
-
-    largura = int((vida / vida_max) * 350)
-    pygame.draw.rect(tela, cor, (x, y, largura, 25), border_radius=15)
-
-    texto_nome = fonte_hud.render(nome, True, BRANCO)
-    tela.blit(texto_nome, (x, y - 35))
-
-# -----------------------
-# ESTADOS DO JOGO
-# -----------------------
+# ESTADOS
 MENU = "menu"
+SELECAO_CLASSE = "selecao_classe"
 JOGO = "jogo"
 GAME_OVER = "game_over"
 VITORIA = "vitoria"
 
 estado = MENU
+classe_heroi = None
 
-# -----------------------
-# VARIÁVEIS DO JOGO
-# -----------------------
+# POSIÇÕES
 hero_x = 200
 hero_y = 470
-
-enemy_x = 900
+enemy_x = 950
 enemy_y = 450
+velocidade_heroi = 5
 
-velocidade = 5
+# DIREÇÕES (1=direita, -1=esquerda)
+heroi_direcao = 1    # herói começa olhando para a direita (em direção ao inimigo)
+enemy_direcao = -1   # inimigo começa olhando para a esquerda (em direção ao herói)
 
-# -----------------------
 # VIDA
-# -----------------------
 hero_vida_max = 100
 hero_vida = 100
-
 enemy_vida_max = 150
 enemy_vida = 150
 
-# -----------------------
-# ATAQUE
-# -----------------------
+# ATAQUE HERÓI
 atacando = False
 tempo_ataque = 0
 duracao_ataque = 200
 dano_aplicado = False
+cooldown_ataque = 0
+COOLDOWN_GUERREIRO = 600
+COOLDOWN_ARQUEIRO = 700
 
-# -----------------------
+# PROJÉTEIS
+projeteis = []
+
+# INIMIGO
+enemy_velocidade = 2
+enemy_atacando = False
+tempo_ultimo_ataque_enemy = 0
+COOLDOWN_ENEMY = 1400
+RANGE_ATAQUE_ENEMY = 170
+
 # PAUSA
-# -----------------------
 pausado = False
-# -----------------------
-# RESET DO JOGO
-# -----------------------
+
+
+def desenhar_botao(rect, texto):
+    pygame.draw.rect(tela, BOTAO_FUNDO, rect, border_radius=20)
+    pygame.draw.rect(tela, BORDA_BOTAO, rect, 3, border_radius=20)
+    txt = fonte.render(texto, True, TEXTO_BRANCO)
+    tela.blit(txt, (
+        rect.x + (rect.width - txt.get_width()) // 2,
+        rect.y + (rect.height - txt.get_height()) // 2
+    ))
+
+
+def desenhar_barra_vida(nome, vida, vida_max, x, y, cor):
+    pygame.draw.rect(tela, CINZA, (x, y, 350, 25), border_radius=15)
+    largura = int((vida / vida_max) * 350)
+    pygame.draw.rect(tela, cor, (x, y, largura, 25), border_radius=15)
+    texto_nome = fonte_hud.render(nome, True, BRANCO)
+    tela.blit(texto_nome, (x, y - 35))
+
+
+def desenhar_selecao_classe():
+    tela.blit(background, (0, 0))
+
+    # overlay escuro
+    overlay = pygame.Surface((largura_tela, altura_tela))
+    overlay.set_alpha(80)
+    overlay.fill((0, 0, 0))
+    tela.blit(overlay, (0, 0))
+
+    # -------------------------
+    # TITULO 
+    # -------------------------
+    titulo = fonte_titulo.render("Escolha sua classe:", True, BRANCO)
+    titulo_x = largura_tela // 2 - titulo.get_width() // 2
+    titulo_y = 60
+
+    tela.blit(titulo, (titulo_x, titulo_y))
+
+    # -------------------------
+    # CARDS
+    # -------------------------
+    mouse_pos = pygame.mouse.get_pos()
+
+    cards = [
+        {
+            "rect": botao_guerreiro,
+            "titulo": "GUERREIRO",
+            "icone": hero_icon,
+            "descricao": ["ataque corpo a corpo", "Dano: 15", "Alcance: curto"],
+        },
+        {
+            "rect": botao_arqueiro,
+            "titulo": "ARQUEIRO",
+            "icone": arqueiro_icon,
+            "descricao": ["ataque a distância", "Dano: 12", "Alcance: longo"],
+        }
+    ]
+
+    for card in cards:
+        rect = card["rect"]
+        hover = rect.collidepoint(mouse_pos)
+
+        # fundo do card
+        cor_fundo = (45, 45, 45)
+        pygame.draw.rect(tela, cor_fundo, rect, border_radius=20)
+
+        # borda hover
+        if hover:
+            pygame.draw.rect(tela, (170, 90, 255), rect, 4, border_radius=20)
+
+        # titulo do card
+        txt_titulo = fonte.render(card["titulo"], True, BRANCO)
+        tela.blit(txt_titulo, (rect.centerx - txt_titulo.get_width() // 2, rect.y + 55))
+
+        # -------------------------
+        # ICONE CIRCULAR
+        # -------------------------
+        icone_redimensionado = pygame.transform.scale(card["icone"], (140, 140))
+        centro_x = rect.centerx
+        centro_y = rect.y + 190
+
+        tela.blit(icone_redimensionado, (centro_x - 70, centro_y - 70))
+
+        # -------------------------
+        # TEXTOS DE DESCRIÇÃO
+        # -------------------------
+        for i, linha in enumerate(card["descricao"]):
+            txt = fonte_desc.render(linha, True, BRANCO)
+            tela.blit(txt, (rect.centerx - txt.get_width() // 2, rect.y + 290 + i * 35))
+    
+
 def reset_jogo():
     global hero_x, hero_y, enemy_x, enemy_y
     global hero_vida, enemy_vida
-    global atacando, dano_aplicado
-    global pausado
+    global atacando, dano_aplicado, cooldown_ataque
+    global pausado, projeteis
+    global enemy_atacando, tempo_ultimo_ataque_enemy
+    global heroi_direcao, enemy_direcao
 
     hero_x, hero_y = 200, 470
-    enemy_x, enemy_y = 900, 450
-
+    enemy_x, enemy_y = 950, 450
     hero_vida = hero_vida_max
     enemy_vida = enemy_vida_max
-
     atacando = False
     dano_aplicado = False
+    cooldown_ataque = 0
     pausado = False
+    projeteis = []
+    enemy_atacando = False
+    tempo_ultimo_ataque_enemy = 0
+    heroi_direcao = 1
+    enemy_direcao = -1
 
-# -----------------------
-# LOOP PRINCIPAL
-# -----------------------
+
 running = True
 
 while running:
     clock.tick(fps)
+    agora = pygame.time.get_ticks()
 
-    # -----------------------
-    # EVENTOS
-    # -----------------------
     for evento in pygame.event.get():
         if evento.type == pygame.QUIT:
             running = False
 
-        # MENU
         if estado == MENU:
             if evento.type == pygame.MOUSEBUTTONDOWN:
                 if botao_jogar.collidepoint(evento.pos):
-                    estado = JOGO
-
+                    estado = SELECAO_CLASSE
                 if botao_sair.collidepoint(evento.pos):
                     running = False
 
-        # JOGO
-        if estado == JOGO:
+        elif estado == SELECAO_CLASSE:
+            if evento.type == pygame.MOUSEBUTTONDOWN:
+                if botao_guerreiro.collidepoint(evento.pos):
+                    classe_heroi = "guerreiro"
+                    reset_jogo()
+                    hero_y = 470
+                    estado = JOGO
+
+                if botao_arqueiro.collidepoint(evento.pos):
+                    classe_heroi = "arqueiro"
+                    reset_jogo()
+                    hero_y = 415
+                    estado = JOGO
+
+        elif estado == JOGO:
             if evento.type == pygame.MOUSEBUTTONDOWN:
                 if pausa_rect.collidepoint(evento.pos):
-                    pausado = not pausado  # Alternar pausa
+                    pausado = not pausado
                 elif pausado:
                     if botao_voltar.collidepoint(evento.pos):
                         pausado = False
@@ -204,28 +323,47 @@ while running:
 
             if not pausado:
                 if evento.type == pygame.KEYDOWN:
-                    if evento.key == pygame.K_SPACE:
-                        atacando = True
-                        tempo_ataque = pygame.time.get_ticks()
-                        dano_aplicado = False
+                    if evento.key == pygame.K_SPACE and agora >= cooldown_ataque:
+                        if classe_heroi == "guerreiro":
+                            atacando = True
+                            tempo_ataque = agora
+                            dano_aplicado = False
+                            cooldown_ataque = agora + COOLDOWN_GUERREIRO
+                        elif classe_heroi == "arqueiro":
+                
+                            direcao_flecha = heroi_direcao
+                            if direcao_flecha == 1:
+                                flecha_x = hero_x + 300
+                            else:
+                                flecha_x = hero_x - 30
+                            projeteis.append({
+                                "x": flecha_x,
+                                "y": hero_y + 140,
+                                "direcao": direcao_flecha,
+                            })
+                            atacando = True
+                            tempo_ataque = agora
+                            cooldown_ataque = agora + COOLDOWN_ARQUEIRO
 
-            
-
-        # GAME OVER / VITORIA
-        if estado == GAME_OVER or estado == VITORIA:
+        elif estado in (GAME_OVER, VITORIA):
             if evento.type == pygame.MOUSEBUTTONDOWN:
                 if botao_restart.collidepoint(evento.pos):
                     reset_jogo()
-                    estado = MENU
-
+                    estado = SELECAO_CLASSE
 
     # ==================================================
     # MENU
     # ==================================================
     if estado == MENU:
-        tela.blit(menu, (0, 0))
+        tela.blit(menu_img, (0, 0))
         desenhar_botao(botao_jogar, "JOGAR")
         desenhar_botao(botao_sair, "SAIR")
+
+    # ==================================================
+    # SELEÇÃO DE CLASSE
+    # ==================================================
+    elif estado == SELECAO_CLASSE:
+        desenhar_selecao_classe()
 
     # ==================================================
     # JOGO
@@ -234,87 +372,141 @@ while running:
         if not pausado:
             teclas = pygame.key.get_pressed()
 
-        # movimento
-        if teclas[pygame.K_a] or teclas[pygame.K_LEFT]:
-            hero_x -= velocidade
+            # Movimento herói + atualiza direção
+            movendo = False
+            if teclas[pygame.K_a] or teclas[pygame.K_LEFT]:
+                hero_x -= velocidade_heroi
+                heroi_direcao = -1
+                movendo = True
+            if teclas[pygame.K_d] or teclas[pygame.K_RIGHT]:
+                hero_x += velocidade_heroi
+                heroi_direcao = 1
+                movendo = True
+            hero_x = max(0, min(hero_x, largura_tela - 170))
 
-        if teclas[pygame.K_d] or teclas[pygame.K_RIGHT]:
-            hero_x += velocidade
-
-        # limites
-        if hero_x < 0:
-            hero_x = 0
-
-        if hero_x > largura_tela - hero_img.get_width():
-            hero_x = largura_tela - hero_img.get_width()
-
-        # desativar ataque após tempo
-        if atacando:
-            agora = pygame.time.get_ticks()
-            if agora - tempo_ataque > duracao_ataque:
+            # Desativar animação de ataque após duração
+            if atacando and agora - tempo_ataque > duracao_ataque:
                 atacando = False
 
-        # dano só 1 vez por ataque
-        distancia = abs(hero_x - enemy_x)
+            # Dano corpo a corpo (guerreiro)
+            if classe_heroi == "guerreiro":
+                distancia = abs(hero_x - enemy_x)
+                if atacando and not dano_aplicado and distancia < 160:
+                    enemy_vida = max(0, enemy_vida - 15)
+                    dano_aplicado = True
 
-        if atacando and not dano_aplicado and distancia < 140:
-            enemy_vida -= 10
-            dano_aplicado = True
+            # Mover projéteis e verificar colisão (arqueiro)
+            projeteis_ativos = []
+            for p in projeteis:
+                p["x"] += 11 * p["direcao"]
+                enemy_rect = pygame.Rect(enemy_x + 20, enemy_y + 10, 160, 180)
+                projetil_rect = pygame.Rect(p["x"], p["y"], 22, 8)
+                if projetil_rect.colliderect(enemy_rect):
+                    enemy_vida = max(0, enemy_vida - 12)
+                elif 0 <= p["x"] <= largura_tela:
+                    projeteis_ativos.append(p)
+            projeteis = projeteis_ativos
 
-            if enemy_vida < 0:
-                enemy_vida = 0
+            # Movimento do inimigo em direção ao herói + atualiza direção
+            diff = enemy_x - hero_x
+            if diff > RANGE_ATAQUE_ENEMY:
+                enemy_x -= enemy_velocidade
+                enemy_direcao = -1   # movendo para a esquerda (em direção ao herói)
+            elif diff < -RANGE_ATAQUE_ENEMY:
+                enemy_x += enemy_velocidade
+                enemy_direcao = 1    # movendo para a direita (herói passou para a direita)
+            else:
+                # Parado: vira para encarar o herói
+                enemy_direcao = -1 if hero_x < enemy_x else 1
+            enemy_x = max(0, min(enemy_x, largura_tela - 200))
 
-        # verificar vitória e derrota
-        if hero_vida <= 0:
-            estado = GAME_OVER
+            # Ataque do inimigo
+            if abs(hero_x - enemy_x) < RANGE_ATAQUE_ENEMY:
+                if agora - tempo_ultimo_ataque_enemy > COOLDOWN_ENEMY:
+                    hero_vida = max(0, hero_vida - 10)
+                    tempo_ultimo_ataque_enemy = agora
+                    enemy_atacando = True
+            if enemy_atacando and agora - tempo_ultimo_ataque_enemy > 300:
+                enemy_atacando = False
 
-        if enemy_vida <= 0:
-            estado = VITORIA
+            # Verificar fim de jogo
+            if hero_vida <= 0:
+                estado = GAME_OVER
+            if enemy_vida <= 0:
+                estado = VITORIA
 
-        # desenhar
+        # DESENHO
         tela.blit(background, (0, 0))
 
-        # desenhar personagem com sprite de ataque
+        # Herói — sprite baseado em classe + direção + animação de ataque
         if atacando:
-            tela.blit(chute_hero, (hero_x, hero_y))
+            sprite_heroi = sprites_ataque_heroi[classe_heroi][heroi_direcao]
+            # offset horizontal para o sprite de ataque (mais largo que o normal)
+            offset_atk = -80 if heroi_direcao == -1 else 0
+            tela.blit(sprite_heroi, (hero_x + offset_atk, hero_y))
         else:
-            tela.blit(hero_img, (hero_x, hero_y))
+            tela.blit(sprites_heroi[classe_heroi][heroi_direcao], (hero_x, hero_y))
 
-        tela.blit(enemy_img, (enemy_x, enemy_y))
+        # Inimigo — sprite baseado na direção atual
+        sprite_inimigo = sprites_enemy[enemy_direcao]
+        tela.blit(sprite_inimigo, (enemy_x, enemy_y))
 
+        # Projéteis
+        for p in projeteis:
+            pygame.draw.rect(tela, AMARELO, (p["x"], p["y"], 22, 8), border_radius=4)
+            # ponta da flecha no lado da direção de movimento
+            ponta_x = p["x"] + (22 if p["direcao"] == 1 else -6)
+            pygame.draw.polygon(tela, LARANJA, [
+                (ponta_x, p["y"] + 4),
+                (ponta_x - 8 * p["direcao"], p["y"]),
+                (ponta_x - 8 * p["direcao"], p["y"] + 8),
+            ])
 
         # HUD
-        desenhar_barra_vida("Guardiã Sombria", hero_vida, hero_vida_max, 100, 100, VERDE)
+        sufixo = "[Guerreiro]" if classe_heroi == "guerreiro" else "[Arqueiro]"
+
+        tela.blit(hero_icon, (30, 83))
+        tela.blit(enemy_icon, (730, 83))
+
+        desenhar_barra_vida(f"Guardiã Sombria {sufixo}", hero_vida, hero_vida_max, 100, 100, VERDE)
         desenhar_barra_vida("Rei Dragão", enemy_vida, enemy_vida_max, 800, 100, VERMELHO)
 
-        # botão pausa
-        tela.blit(botao_pausa, (pausa_rect.x, pausa_rect.y))
+        # Barra de cooldown do ataque
+        restante = max(0, cooldown_ataque - agora)
+        cd_max = COOLDOWN_GUERREIRO if classe_heroi == "guerreiro" else COOLDOWN_ARQUEIRO
+        t_cd = fonte_desc.render("ATAQUE", True, BRANCO)
+        tela.blit(t_cd, (100, 130))
+        pygame.draw.rect(tela, CINZA, (100, 148, 180, 10), border_radius=5)
+        if restante > 0:
+            pct = 1.0 - restante / cd_max
+            pygame.draw.rect(tela, AMARELO, (100, 148, int(180 * pct), 10), border_radius=5)
+        else:
+            pygame.draw.rect(tela, AMARELO, (100, 148, 180, 10), border_radius=5)
+
+        tela.blit(botao_pausa_img, (pausa_rect.x, pausa_rect.y))
 
         if pausado:
             overlay = pygame.Surface((largura_tela, altura_tela))
             overlay.set_alpha(140)
             overlay.fill((0, 0, 0))
             tela.blit(overlay, (0, 0))
-
-            tela.blit(menu_pausa, (370, 80))
+            tela.blit(menu_pausa_img, (370, 80))
             desenhar_botao(botao_voltar, "VOLTAR AO JOGO")
             desenhar_botao(botao_reiniciar, "REINICIAR")
             desenhar_botao(botao_sair_pausa, "SAIR")
-
-
 
     # ==================================================
     # GAME OVER
     # ==================================================
     elif estado == GAME_OVER:
-        tela.blit(game_over, (0, 0))
+        tela.blit(game_over_img, (0, 0))
         desenhar_botao(botao_restart, "JOGAR NOVAMENTE")
 
     # ==================================================
     # VITÓRIA
     # ==================================================
     elif estado == VITORIA:
-        tela.blit(vitoria, (0, 0))
+        tela.blit(vitoria_img, (0, 0))
         desenhar_botao(botao_restart, "JOGAR NOVAMENTE")
 
     pygame.display.update()
